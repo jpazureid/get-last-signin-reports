@@ -1,11 +1,22 @@
 ##
-## Create self signed certificate
+## Download NuGet.exe
 ##
-$cert = New-SelfSignedCertificate -Subject "CN=SelfSignedCert" -CertStoreLocation "Cert:\CurrentUser\My"  -KeyExportPolicy Exportable -KeySpec Signature
-$cert
+$sourceNugetExe = "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe"
+$targetNugetExe = ".\nuget.exe"
+Remove-Item .\Tools -Force -Recurse -ErrorAction Ignore
+Invoke-WebRequest $sourceNugetExe -OutFile $targetNugetExe
+Set-Alias nuget $targetNugetExe -Scope Global -Verbose
 
 ##
-## Export new self signed certificate as .cer file
+## Download Microsoft.IdentityModel.Clients.ActiveDirectory.dll
 ##
-$cerfile = ".\SelfSignedCert.cer"
-Export-Certificate -Cert $cert -FilePath $cerfile
+./nuget install Microsoft.IdentityModel.Clients.ActiveDirectory -O .\Tools
+md .\Tools\Microsoft.IdentityModel.Clients.ActiveDirectory
+$prtFolder = Get-ChildItem ./Tools | Where-Object {$_.Name -match 'Microsoft.IdentityModel.Clients.ActiveDirectory.'}
+move .\Tools\$prtFolder\lib\net45\*.* .\Tools\Microsoft.IdentityModel.Clients.ActiveDirectory
+Remove-Item .\Tools\$prtFolder -Force -Recurse
+
+##
+## Remove NuGet.exe
+##
+Remove-Item nuget.exe
