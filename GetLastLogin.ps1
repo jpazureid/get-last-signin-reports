@@ -49,7 +49,7 @@ if ($null -ne $accessToken) {
     #
     $headerParams = @{'Authorization' = "$($accessTokenType) $($accessToken)"}
     
-    $reqUrl = "$resource/beta/users"
+    $reqUrl = "$resource/v1.0/users"
     do {
         $rData = (Invoke-WebRequest -UseBasicParsing -Headers $headerParams -Uri $reqUrl).Content | ConvertFrom-Json
         $users += $rData.value
@@ -58,7 +58,7 @@ if ($null -ne $accessToken) {
 
     $data += "UserPrincipalName,Last sign-in date in UTC (Last 30 days)"
     foreach ($user in $users) {
-        $reqUrl = "$resource/beta/auditLogs/signIns?&`$filter=userId eq '" + $user.id + "'&`$orderby=createdDateTime desc &`$top=1"
+        $reqUrl = "$resource/v1.0/auditLogs/signIns?&`$filter=userId eq '" + $user.id + "'&`$orderby=createdDateTime desc &`$top=1"
         $rData = (Invoke-WebRequest -UseBasicParsing -Headers $headerParams -Uri $reqUrl).Content | ConvertFrom-Json
         $data += $user.UserPrincipalName + "," + $rData.value[0].createdDateTime
     }
