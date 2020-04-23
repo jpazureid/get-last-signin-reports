@@ -71,11 +71,11 @@ $outfile = "C:\Users\xxxxx\Desktop\lastLogin.csv"
 
 キーの場合：
 ```powershell
-.\GetLastLogin.ps1 -authMethod Key <手順1で作成したキーの値>
+.\GetLastLogin.ps1 -authMethod Key -clientSecretOrThumbprint <手順1で作成したキーの値>
 ```
 証明書の場合：
 ```powershell
-.\GetLastLogin.ps1 -authMethod Cert <手順1でアップロードした証明書の拇印の値>
+.\GetLastLogin.ps1 -authMethod Cert -clientSecretOrThumbprint <手順1でアップロードした証明書の拇印の値>
 ```
 
 ### 実行結果
