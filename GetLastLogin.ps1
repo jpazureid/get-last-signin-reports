@@ -1,70 +1,70 @@
 Param(
-    [Parameter(ValueFromPipeline = $true,mandatory=$true)][ValidateSet("Cert", "Key")][String]$authMethod,
-    [Parameter(ValueFromPipeline = $true,mandatory=$true)][String]$clientSecretOrThumbprint
+    [Parameter(ValueFromPipeline = $true, mandatory = $true)][ValidateSet("Cert", "Key")][String]$authMethod,
+    [Parameter(ValueFromPipeline = $true, mandatory = $true)][String]$clientSecretOrThumbprint
 )
 
 # Authorization & resource Url
 $tenantId = "contoso.onmicrosoft.com" 
-$resource = "https://graph.microsoft.com" 
+$resource = "https://graph.microsoft.com"
+$scope = "$resource/.default" 
 $clientID = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXXX"
-$outfile = "C:\Users\xxxxx\Desktop\lastLogin.csv"
-$authUrl = "https://login.microsoftonline.com/$tenantId/" 
+$outfile = "$env:USERPROFILE\Desktop\lastLogin.csv"
 $data = @()
 
-switch ($authMethod)
-{
-    "cert" {
-        Add-Type -Path ".\Tools\Microsoft.IdentityModel.Clients.ActiveDirectory\Microsoft.IdentityModel.Clients.ActiveDirectory.dll"
+$scopes = New-Object System.Collections.ObjectModel.Collection["string"]
+$scopes.Add($scope)
 
-        # Get certificate
-        $cert = Get-ChildItem -path cert:\CurrentUser\My | Where-Object {$_.Thumbprint -eq $clientSecretOrThumbprint}
-    
-        # Create AuthenticationContext for acquiring token  
-        $authContext = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext $authUrl, $false
-    
-        # Create credential for client application 
-        $clientCred = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.ClientAssertionCertificate $clientID, $cert
-    
-        # Acquire the authentication result
-        $authResult = $authContext.AcquireTokenAsync($resource, $clientCred).Result
-        $accessTokenType = $authResult.AccessTokenType
-        $accessToken = $authResult.AccessToken
-    }
-    "key" {
-        $postParams = @{
-            client_id     = $clientID; 
-            client_secret = $clientSecretOrThumbprint;
-            grant_type    = 'client_credentials';
-            resource      = $resource
+Function Get-AccessToken() {
+    switch ($authMethod) {
+        "cert" {
+            Add-Type -Path "Tools\Microsoft.Identity.Client\Microsoft.Identity.Client.dll"
+
+            # Get certificate
+            $cert = Get-ChildItem -path cert:\CurrentUser\My | Where-Object { $_.Thumbprint -eq $clientSecretOrThumbprint }
+        
+            # Create credential Application
+            $confidentialApp = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($clientID).WithCertificate($cert).withTenantId($tenantId).Build()
         }
-        $authResult = (Invoke-WebRequest -Uri ($authUrl + "oauth2/token") -Method POST -Body $postParams) | ConvertFrom-Json
-        $accessTokenType = $authResult.token_type
-        $accessToken = $authResult.access_token
+        "key" {
+            $confidentialApp = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($clientID).WithClientSecret($clientSecretOrThumbprint).withTenantId($tenantId).Build()
+        }
     }
+    # Acquire the authentication result
+    $authResult = $confidentialApp.AcquireTokenForClient($scopes).ExecuteAsync().Result
+    if ($null -eq $authResult) {
+        Write-Host "ERROR: No Access Token"
+        exit
+    }    
+    return $authResult
 }
 
-if ($null -ne $accessToken) {
-    #
-    # Compose the access token type and access token for authorization header
-    #
-    $headerParams = @{'Authorization' = "$($accessTokenType) $($accessToken)"}
-    
-    $reqUrl = "$resource/v1.0/users"
-    do {
-        $rData = (Invoke-WebRequest -UseBasicParsing -Headers $headerParams -Uri $reqUrl).Content | ConvertFrom-Json
-        $users += $rData.value
-        $reqUrl = ($rData.'@odata.nextLink') + ''
-    }while ($reqUrl.IndexOf('https') -ne -1)
+$authResult = Get-AccessToken
+$accessToken = $authResult.AccessToken
+#
+# Compose the access token type and access token for authorization header
+#
+$headerParams = @{'Authorization' = "Bearer $($accessToken)" }        
 
-    $data += "UserPrincipalName,Last sign-in date in UTC (Last 30 days)"
-    foreach ($user in $users) {
-        $reqUrl = "$resource/v1.0/auditLogs/signIns?&`$filter=userId eq '" + $user.id + "'&`$orderby=createdDateTime desc &`$top=1"
-        $rData = (Invoke-WebRequest -UseBasicParsing -Headers $headerParams -Uri $reqUrl).Content | ConvertFrom-Json
-        $data += $user.UserPrincipalName + "," + $rData.value[0].createdDateTime
+$reqUrl = "$resource/v1.0/users"
+do {
+    if ($null -eq $authResult -or ($authResult.ExpiresOn -lt $(Get-Date).AddMinutes(-10))) {
+        $authResult = Get-AccessToken
+        $accessToken = $authResult.AccessToken
+        #
+        # Compose the access token type and access token for authorization header
+        #
+        $headerParams = @{'Authorization' = "Bearer $($accessToken)" }        
     }
+    $rData = (Invoke-WebRequest -UseBasicParsing -Headers $headerParams -Uri $reqUrl).Content | ConvertFrom-Json
+    $users += $rData.value
+    $reqUrl = ($rData.'@odata.nextLink') + ''
+}while ($reqUrl.IndexOf('https') -ne -1)
 
-    $data | Out-File $outfile -encoding "utf8"
+$data += "UserPrincipalName,Last sign-in date in UTC (Last 30 days)"
+foreach ($user in $users) {
+    $reqUrl = "$resource/v1.0/auditLogs/signIns?&`$filter=userId eq '" + $user.id + "'&`$orderby=createdDateTime desc &`$top=1"
+    $rData = (Invoke-WebRequest -UseBasicParsing -Headers $headerParams -Uri $reqUrl).Content | ConvertFrom-Json
+    $data += $user.UserPrincipalName + "," + $rData.value[0].createdDateTime
 }
-else {
-    Write-Host "ERROR: No Access Token"
-}
+
+$data | Out-File $outfile -encoding "utf8"

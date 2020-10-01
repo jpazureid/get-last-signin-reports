@@ -1,14 +1,17 @@
 # Get last-sign-in activity  reports
+
 Shows how to download last sign-in log  on Azure AD  with PowerShell
 
 PowerShell スクリプトにて、ユーザー毎に最終サインイン日時を取得する方法を紹介します。なお、本方法を利用するにはAzure AD Premium P1 ライセンス以上が必要です。
 
-
 ## Azure AD におけるユーザーの最終サインイン日時
+
 現在のAzure AD には、ユーザーの最終サインイン日時を保持するプロパティがないため、ユーザーがいつ最後にサインインしたかという時刻を取得することはできません。Azure AD の開発チームは、プロパティの作成を検討しておりますが、明確な機能追加の時期は発表されていません。
 
-そのため、一時的な対処策となりますが、ユーザー毎に最終ログイン日時を取得する方法をご用意いたしました。
+> 2020/10 現在 [Beta 版ではございますが、最終サインイン日時が取得可能となりました](https://docs.microsoft.com/ja-jp/graph/api/resources/signinactivity?view=graph-rest-beta)
+> [チームブログにて詳しい採取の仕方](https://jpazureid.github.io/blog/azure-active-directory/azure-ad-get-lastSignInDateTime/)をご紹介しておりますので、よろしければご確認ください。
 
+そのため、一時的な対処策となりますが、ユーザー毎に最終ログイン日時を取得する方法をご用意いたしました。
 
 ## 本スクリプトで取得する最終サインイン日時について
 
@@ -25,6 +28,7 @@ PowerShell スクリプトにて、ユーザー毎に最終サインイン日時
 
 
 ### 証明書を利用する場合は予め以下の準備が必要です。
+
 - 認証に使用する証明書の作成
 
 CreateAndExportCert.ps1 を実行します。
@@ -40,6 +44,7 @@ GetModuleByNuget.ps1 を実行すると、C:\SignInReport 配下に Tools とい
 
  
 ### 1.アプリケーションの登録
+
 Azure AD 上にアプリケーションを準備します。
 
 以下のドキュメントに記載された手順に従って、アプリケーションを登録し、"構成設定を収集する" に従ってドメイン名とクライアント ID を取得します。
@@ -70,16 +75,19 @@ $outfile = "C:\Users\xxxxx\Desktop\lastLogin.csv"
 引数にて、キーまたは証明書を選択します。
 
 キーの場合：
+
 ```powershell
 .\GetLastLogin.ps1 -authMethod Key -clientSecretOrThumbprint <手順1で作成したキーの値>
 ```
+
 証明書の場合：
+
 ```powershell
 .\GetLastLogin.ps1 -authMethod Cert -clientSecretOrThumbprint <手順1でアップロードした証明書の拇印の値>
 ```
 
 ### 実行結果
-GetLastLogin.ps1 を実行すると、ユーザー毎に最終サインイン日時が csv ファイルとして取得できます。
 
+GetLastLogin.ps1 を実行すると、ユーザー毎に最終サインイン日時が csv ファイルとして取得できます。
 
 ![最終サインイン日時の取得結果イメージ](img/lastsigninlog.png)
