@@ -16,10 +16,9 @@ $scopes.Add($scope)
 
 Function Get-AccessToken() {
     if ($null -eq $script:confidentialApp) {
+        Add-Type -Path "Tools\Microsoft.Identity.Client\Microsoft.Identity.Client.dll"
         switch ($authMethod) {
             "cert" {
-                Add-Type -Path "Tools\Microsoft.Identity.Client\Microsoft.Identity.Client.dll"
-
                 # Get certificate
                 $cert = Get-ChildItem -path cert:\CurrentUser\My | Where-Object { $_.Thumbprint -eq $clientSecretOrThumbprint }
             
