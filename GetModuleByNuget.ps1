@@ -8,12 +8,12 @@ Invoke-WebRequest $sourceNugetExe -OutFile $targetNugetExe
 Set-Alias nuget $targetNugetExe -Scope Global -Verbose
 
 ##
-## Download Microsoft.IdentityModel.Clients.ActiveDirectory.dll
+## Download Microsoft.Identity.Client
 ##
-./nuget install Microsoft.IdentityModel.Clients.ActiveDirectory -O .\Tools
-md .\Tools\Microsoft.IdentityModel.Clients.ActiveDirectory
-$prtFolder = Get-ChildItem ./Tools | Where-Object {$_.Name -match 'Microsoft.IdentityModel.Clients.ActiveDirectory.'}
-move .\Tools\$prtFolder\lib\net45\*.* .\Tools\Microsoft.IdentityModel.Clients.ActiveDirectory
+./nuget install Microsoft.Identity.Client -O .\Tools
+md .\Tools\Microsoft.Identity.Client
+$prtFolder = Get-ChildItem ./Tools | Where-Object {$_.Name -match 'Microsoft.Identity.Client.'}
+move .\Tools\$prtFolder\lib\net45\*.* .\Tools\Microsoft.Identity.Client
 Remove-Item .\Tools\$prtFolder -Force -Recurse
 
 ##
