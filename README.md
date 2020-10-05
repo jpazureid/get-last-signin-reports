@@ -43,7 +43,7 @@ GetModuleByNuget.ps1 を C:\SignInReport フォルダー配下に保存し実行
 証明書を用いたトークン取得処理に必要なライブラリを nuget で取得します。
 GetModuleByNuget.ps1 を実行すると、C:\SignInReport 配下に Tools というフォルダーが作成され Microsoft.IdentityModel.Clients.ActiveDirectory.dll などのファイルが保存されます。
 
-### 1.アプリケーションの登録
+### 2.アプリケーションの登録
 
 Azure AD 上にアプリケーションを準備します。
 
@@ -123,16 +123,14 @@ Azure AD 上にアプリケーションを準備します。
 
 ![](./img/15_add_client_secret.png)
 
-### 2. スクリプトの実行
+### 3. スクリプトの実行
 
 最後に、C:\SignInReport 配下に保存した GetLastSignIn.ps1 を、環境に合わせて引数を調整し実行します。
-
-引数にて、キーまたは証明書を選択します。
 
 キーの場合：
 
 ```powershell
-.\GetLastSignIn.ps1 -authMethod Key -clientSecretOrThumbprint <手順1で作成したキーの値> -tenantId 'contoso.onmicrosoft.com' -clientId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -outfile "C:\SignInReport\lastSignIns.csv"
+.\GetLastSignIn.ps1 -authMethod Key -clientSecretOrThumbprint <手順 2 で作成したクライアント シークレットの値> -tenantId 'contoso.onmicrosoft.com' -clientId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -outfile "C:\SignInReport\lastSignIns.csv"
 ```
 
 > クライアント ID はアプリの登録手順で取得したアプリケーション ID を指定します。
@@ -141,7 +139,7 @@ Azure AD 上にアプリケーションを準備します。
 証明書の場合：
 
 ```powershell
-.\GetLastSignIn.ps1 -authMethod Cert -clientSecretOrThumbprint <手順1でアップロードした証明書の拇印の値> -tenantId 'contoso.onmicrosoft.com' -clientId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -outfile "C:\SignInReport\lastSignIns.csv"
+.\GetLastSignIn.ps1 -authMethod Cert -clientSecretOrThumbprint <手順 1 でアップロードした証明書の拇印の値> -tenantId 'contoso.onmicrosoft.com' -clientId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -outfile "C:\SignInReport\lastSignIns.csv"
 ```
 
 ### 実行結果
