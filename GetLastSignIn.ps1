@@ -4,7 +4,7 @@ Param(
     [Parameter(ValueFromPipeline = $true, mandatory = $true)][String]$tenantId,
     [Parameter(ValueFromPipeline = $true, mandatory = $true)][String]$clientId,
     [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$resource = "https://graph.microsoft.com",
-    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$outfile = "$env:USERPROFILE\Desktop\lastLogin.csv"
+    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$outfile = "$env:USERPROFILE\Desktop\lastSignIns.csv"
 )
 
 # Authorization & resource Url
