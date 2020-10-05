@@ -77,7 +77,7 @@ Azure AD 上にアプリケーションを準備します。
 
 ![](./img/06_add_permissions.png)
 
-- "AuditLog.Read.All" のチェックを有効にし、[アクセス許可の追加] をクリックします。
+- 続けて "AuditLog.Read.All" のチェックを有効にし、[アクセス許可の追加] をクリックします。
 
 ![](./img/07_add_permissions.png)
 
