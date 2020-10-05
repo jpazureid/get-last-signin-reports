@@ -1,16 +1,16 @@
 Param(
     [Parameter(ValueFromPipeline = $true, mandatory = $true)][ValidateSet("Cert", "Key")][String]$authMethod,
-    [Parameter(ValueFromPipeline = $true, mandatory = $true)][String]$clientSecretOrThumbprint
+    [Parameter(ValueFromPipeline = $true, mandatory = $true)][String]$clientSecretOrThumbprint,
+    [Parameter(ValueFromPipeline = $true, mandatory = $true)][String]$tenantId,
+    [Parameter(ValueFromPipeline = $true, mandatory = $true)][String]$clientId,
+    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$resource = "https://graph.microsoft.com",
+    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$outfile = "$env:USERPROFILE\Desktop\lastLogin.csv"
 )
 
 # Authorization & resource Url
-$tenantId = "contoso.onmicrosoft.com" 
-$resource = "https://graph.microsoft.com"
-$scope = "$resource/.default" 
-$clientID = "XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXXX"
-$outfile = "$env:USERPROFILE\Desktop\lastLogin.csv"
 $data = @()
 
+$scope = "$resource/.default"
 $scopes = New-Object System.Collections.ObjectModel.Collection["string"]
 $scopes.Add($scope)
 
@@ -23,10 +23,10 @@ Function Get-AccessToken() {
                 $cert = Get-ChildItem -path cert:\CurrentUser\My | Where-Object { $_.Thumbprint -eq $clientSecretOrThumbprint }
             
                 # Create credential Application
-                $script:confidentialApp = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($clientID).WithCertificate($cert).withTenantId($tenantId).Build()
+                $script:confidentialApp = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($clientId).WithCertificate($cert).withTenantId($tenantId).Build()
             }
             "key" {
-                $script:confidentialApp = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($clientID).WithClientSecret($clientSecretOrThumbprint).withTenantId($tenantId).Build()
+                $script:confidentialApp = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($clientId).WithClientSecret($clientSecretOrThumbprint).withTenantId($tenantId).Build()
             }
         }
     }
