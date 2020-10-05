@@ -51,6 +51,8 @@ Azure AD 上にアプリケーションを準備します。
 
 - Azure ポータルに管理者権限でサインインし、[Azure Active Directory] > [アプリの登録] より、[+新規登録] をクリックします。
 
+![](./img/00_app_registration.png)
+
 - 任意の名前を選択し、登録を選択します。 
 
 ![](./img/01_app_registration.png)
