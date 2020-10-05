@@ -6,18 +6,14 @@ PowerShell スクリプトにて、ユーザー毎に最終サインイン日時
 
 ## Azure AD におけるユーザーの最終サインイン日時
 
-現在のAzure AD には、ユーザーの最終サインイン日時を保持するプロパティがないため、ユーザーがいつ最後にサインインしたかという時刻を取得することはできません。Azure AD の開発チームは、プロパティの作成を検討しておりますが、明確な機能追加の時期は発表されていません。
+2020/10 現在 Beta 版ではございますが、最終サインイン日時が取得可能となりました
 
-> 2020/10 現在 [Beta 版](https://docs.microsoft.com/ja-jp/graph/api/resources/signinactivity?view=graph-rest-beta)ではございますが、最終サインイン日時が取得可能となりました
-> [チームブログにて詳しい採取の仕方](https://jpazureid.github.io/blog/azure-active-directory/azure-ad-get-lastSignInDateTime/)をご紹介しておりますので、よろしければご確認ください。
-
-そのため、一時的な対処策となりますが、ユーザー毎に最終ログイン日時を取得する方法をご用意いたしました。
+本スクリプトでは、Beta 版の Microsoft Graph API で取得可能な [SingInActivity](https://docs.microsoft.com/ja-jp/graph/api/resources/signinactivity?view=graph-rest-beta) データをもとに最終サインイン日時を取得します。
 
 ## 本スクリプトで取得する最終サインイン日時について
 
-本スクリプトではサインインログよりユーザーの最終サインインを取得しています。そのため、以下の点を予めご留意ください。
+本スクリプトでは SignInActivity よりユーザーの最終サインインを取得しています。そのため、以下の点を予めご留意ください。
 
-- サインイン ログの保存期間により、30 日以上前のサインイン日時は確認できません。
 - サインインのログから一覧を取得しているため、厳密な ”最終アクセス日時” とは異なります。
 
 ## 最終サインイン日時の取得手順
@@ -28,7 +24,7 @@ PowerShell スクリプトにて、ユーザー毎に最終サインイン日時
 
 ### 1.事前準備
 
-[スクリプト一式](https://github.com/jpazureid/get-last-signin-reports/archive/stable.zip) をダウンロードし、任意の場所 (以下では C:\SignInReport) に展開します。
+[スクリプト一式](https://github.com/jpazureid/get-last-signin-reports/archive/beta.zip) をダウンロードし、任意の場所 (以下では C:\SignInReport) に展開します。
 
 - 認証に使用する証明書の作成
 
