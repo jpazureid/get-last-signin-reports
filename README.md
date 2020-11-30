@@ -36,9 +36,7 @@ CreateAndExportCert.ps1 を実行します。
 
 CreateAndExportCert.ps1 は自己署名証明書を生成し、ユーザーの証明書ストア (個人) に格納します。さらに、公開鍵を含む証明書 (SelfSignedCert.cer ファイル) をカレント  ディレクトリに出力します。キーを利用する場合はこの手順をスキップします。
 
-- 処理に必要なライブラリを nuget で取得するスクリプトの準備と実行
-
-GetModuleByNuget.ps1 を C:\SignInReport フォルダー配下に保存し実行します。
+続けて GetModuleByNuget.ps1 を実行します。
 
 証明書を用いたトークン取得処理に必要なライブラリを nuget で取得します。
 GetModuleByNuget.ps1 を実行すると、C:\SignInReport 配下に Tools というフォルダーが作成され Microsoft.IdentityModel.Clients.ActiveDirectory.dll などのファイルが保存されます。
