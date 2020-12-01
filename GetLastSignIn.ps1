@@ -55,7 +55,7 @@ do {
     $reqUrl = ($rData.'@odata.nextLink') + ''
 }while ($reqUrl.IndexOf('https') -ne -1)
 
-$data += "UserPrincipalName,Last sign-in date in UTC (Last 30 days)"
+$data += "UserPrincipalName,Last sign-in date from UTC (2019/12/01)"
 foreach ($user in $users) {
     $headerParams = Get-AuthorizationHeader
     $reqUrl = "$resource/v1.0/auditLogs/signIns?&`$filter=userId eq '" + $user.id + "'&`$orderby=createdDateTime desc &`$top=1"
