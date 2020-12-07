@@ -2,7 +2,8 @@
 
 Shows how to download last sign-in log  on Azure AD  with PowerShell
 
-PowerShell スクリプトにて、ユーザー毎に最終サインイン日時を取得する方法を紹介します。なお、本方法を利用するにはAzure AD Premium P1 ライセンス以上が必要です。
+PowerShell スクリプトにて、ユーザー毎に最終サインイン日時を取得する方法を紹介します。
+なお、ユーザーが最後に利用したアプリケーションを取得するためには Azure AD Premium P1 ライセンス以上が必要です。
 
 ## Azure AD におけるユーザーの最終サインイン日時
 
@@ -23,6 +24,12 @@ PowerShell スクリプトにて、ユーザー毎に最終サインイン日時
 証明書の場合、証明書を作成する事前準備が必要となりますがキーよりも安全であり推奨される方法です。
 
 ### 1.事前準備
+
+ダウンロードした PowerShell スクリプトを実行するため、以下のコマンドで ExecutionPolicy を RemoteSign に設定します。
+
+```powershell
+Set-ExecutionPolicy RemoteSigned
+```
 
 [スクリプト一式](https://github.com/jpazureid/get-last-signin-reports/archive/beta.zip) をダウンロードし、任意の場所 (以下では C:\SignInReport) に展開します。
 
