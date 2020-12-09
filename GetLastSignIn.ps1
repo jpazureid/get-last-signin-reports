@@ -16,7 +16,7 @@ $scopes = New-Object System.Collections.ObjectModel.Collection["string"]
 $scopes.Add($scope)
 
 Function Get-AccessToken() {
-    if ($null -eq $script:confidentialApp) {
+    if ($null -eq $local:confidentialApp) {
         Add-Type -Path "Tools\Microsoft.Identity.Client\Microsoft.Identity.Client.dll"
         switch ($authMethod) {
             "cert" {
@@ -24,16 +24,16 @@ Function Get-AccessToken() {
                 $cert = Get-ChildItem -path cert:\CurrentUser\My | Where-Object { $_.Thumbprint -eq $clientSecretOrThumbprint }
             
                 # Create credential Application
-                $script:confidentialApp = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($clientId).WithCertificate($cert).withTenantId($tenantId).Build()
+                $local:confidentialApp = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($clientId).WithCertificate($cert).withTenantId($tenantId).Build()
             }
             "key" {
-                $script:confidentialApp = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($clientId).WithClientSecret($clientSecretOrThumbprint).withTenantId($tenantId).Build()
+                $local:confidentialApp = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($clientId).WithClientSecret($clientSecretOrThumbprint).withTenantId($tenantId).Build()
             }
         }
     }
     # Acquire the authentication result
     # ConfidentialClientApplication return token from cache if it valid.
-    $authResult = $script:confidentialApp.AcquireTokenForClient($scopes).ExecuteAsync().Result
+    $authResult = $local:confidentialApp.AcquireTokenForClient($scopes).ExecuteAsync().Result
     if ($null -eq $authResult) {
         Write-Host "ERROR: No Access Token"
         exit
