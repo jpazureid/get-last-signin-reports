@@ -113,6 +113,7 @@ do {
                     $appDisplayName = "This user does not have sign in activity event in last 30 days."
                 } else {
                     Write-Error "UnEpected Error: $errorMessage"
+                    exit 1
                 }
             }
 
