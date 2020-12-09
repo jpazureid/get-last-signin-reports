@@ -4,7 +4,8 @@ Param(
     [Parameter(ValueFromPipeline = $true, mandatory = $true)][String]$tenantId,
     [Parameter(ValueFromPipeline = $true, mandatory = $true)][String]$clientId,
     [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$resource = "https://graph.microsoft.com",
-    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$outfile = "$env:USERPROFILE\Desktop\lastSignIns.csv"
+    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$outfile = "$env:USERPROFILE\Desktop\lastSignIns.csv",
+    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$isPremiumTenant = $true
 )
 
 # Authorization & resource Url
@@ -15,7 +16,7 @@ $scopes = New-Object System.Collections.ObjectModel.Collection["string"]
 $scopes.Add($scope)
 
 Function Get-AccessToken() {
-    if ($null -eq $script:confidentialApp) {
+    if ($null -eq $local:confidentialApp) {
         Add-Type -Path "Tools\Microsoft.Identity.Client\Microsoft.Identity.Client.dll"
         switch ($authMethod) {
             "cert" {
@@ -23,16 +24,16 @@ Function Get-AccessToken() {
                 $cert = Get-ChildItem -path cert:\CurrentUser\My | Where-Object { $_.Thumbprint -eq $clientSecretOrThumbprint }
             
                 # Create credential Application
-                $script:confidentialApp = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($clientId).WithCertificate($cert).withTenantId($tenantId).Build()
+                $local:confidentialApp = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($clientId).WithCertificate($cert).withTenantId($tenantId).Build()
             }
             "key" {
-                $script:confidentialApp = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($clientId).WithClientSecret($clientSecretOrThumbprint).withTenantId($tenantId).Build()
+                $local:confidentialApp = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($clientId).WithClientSecret($clientSecretOrThumbprint).withTenantId($tenantId).Build()
             }
         }
     }
     # Acquire the authentication result
     # ConfidentialClientApplication return token from cache if it valid.
-    $authResult = $script:confidentialApp.AcquireTokenForClient($scopes).ExecuteAsync().Result
+    $authResult = $local:confidentialApp.AcquireTokenForClient($scopes).ExecuteAsync().Result
     if ($null -eq $authResult) {
         Write-Host "ERROR: No Access Token"
         exit
@@ -81,45 +82,49 @@ do {
         #
         # Check if event's request id. if id is null then it means the user never had a sctivity event.
         #
-        if ($null -ne $lastRequestID) {
+        if ($null -ne $lastRequestID -and $isPremiumTenant) {
             $eventReqUrl = "$resource/v1.0/auditLogs/signIns/$lastRequestID"
             #Write-Output "we have eventReqUrl is $eventReqUrl"
 
             try {
-                $signInEventJasonRaw = Invoke-WebRequest -UseBasicParsing -Headers $headerParams -Uri $eventReqUrl
+                $signInEventJsonRaw = Invoke-WebRequest -UseBasicParsing -Headers $headerParams -Uri $eventReqUrl
+                $signInEventJson = $signInEventJsonRaw.Content
+                $signInEvent = ($signInEventJson | ConvertFrom-Json)
+                $appDisplayName = $signInEvent.appDisplayName
             }
             catch [System.Net.WebException] {
-                $requstStatusCode = $_.Exception.Response.StatusCode.value__
+                $statusCode = $_.Exception.Response.StatusCode.value__
+                $stream = $_.Exception.Response.GetResponseStream()
+                $reader = New-Object System.IO.StreamReader $stream
+                $reader.BaseStream.Position = 0
+                $reader.DiscardBufferedData()
+                $errorMessage = $reader.ReadToEnd()
+                try {
+                    $errorObj = ConvertFrom-Json $errorMessage
+                }
+                catch {
+                    Write-Error "Unexpect error: $errorMessage. Continue..."
+                }
+                if ($statusCode -eq 403 -and ($errorObj.error -and $errorObj.error.code -eq "Authentication_RequestFromNonPremiumTenantOrB2CTenant")) {
+                    Write-Error "This tenant doesn't have AAD Premium License or B2C tenant. To show App DisplayName, AAD Premium License is required. isPremiumTenant option is set to false."
+                    $isPremiumTenant = $false
+                } elseif ($statusCode -eq 404) {
+                    #Write-Output "This user does not have sign in activity event in last 30 days."
+                    $appDisplayName = "This user does not have sign in activity event in last 30 days."
+                } else {
+                    Write-Error "UnEpected Error: $errorMessage"
+                    exit 1
+                }
             }
 
-            if ($requstStatusCode -eq 404) {
-                #Write-Output "This user does not have sign in activity event in last 30 days."
-                $appDisplayName = "This user does not have sign in activity event in last 30 days."
-                $data += $userUPN + "," + $lastSignin + "," + $appDisplayName
-            }
-            else {
-                $signInEventJason = $signInEventJasonRaw.Content
-                #Write-Output "we have signInEventJason is $signInEventJason"
-
-                $signInEvent = ($signInEventJason | ConvertFrom-Json)
-                #Write-Output "we have signInEvent is $signInEvent"
-                
-                $appDisplayName = $signInEvent.appDisplayName
-                #Write-Output "we have appDisplayName is $appDisplayName"
-
-                $data += $userUPN + "," + $lastSignin + "," + $appDisplayName
-            }
-            $requstStatusCode = $null
         }
         else {
             #Write-Output "This user never had sign in activity event."
             $lastSignin = "This user never had sign in activity event."
             $appDisplayName = $null
-
-            $data += $userUPN + "," + $lastSignin + "," + $appDisplayName
         }
+        $data += $userUPN + "," + $lastSignin + "," + $appDisplayName
     }
-   
     $reqUrl = ($signInActivityJson.'@odata.nextLink') + ''
 
 } while ($reqUrl.IndexOf('https') -ne -1)
