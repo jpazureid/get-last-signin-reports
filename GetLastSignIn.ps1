@@ -71,8 +71,8 @@ do {
         #
         # Get user and event information
         #
-        $userUPN = $signInActivityJsonValue.userPrincipalName[$j]
-        $allSignInAct = $signInActivityJsonValue.signInActivity[$j]
+        $userUPN = $signInActivityJsonValue[$j].userPrincipalName
+        $allSignInAct = $signInActivityJsonValue[$j].signInActivity
         $lastRequestID = $allSignInAct.lastSignInRequestId
         $lastSignin = $allSignInAct.lastSignInDateTime
         #Write-Output "User number $j" "We have UPN is $userUPN"
