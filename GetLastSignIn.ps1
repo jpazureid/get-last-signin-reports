@@ -8,9 +8,13 @@ Param(
     [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$isPremiumTenant = $true
 )
 
-# Authorization & resource Url
 $data = @()
+#
+# Create title for the out put file
+#
+$data += "UserPrincipalName,Last sign-in event date in UTC,Cloud Application"
 
+# Authorization & resource Url
 $scope = "$resource/.default"
 $scopes = New-Object System.Collections.ObjectModel.Collection["string"]
 $scopes.Add($scope)
@@ -59,10 +63,6 @@ do {
     $signInActivityJsonValue = $signInActivityJson.Value
     $numEvents = $signInActivityJsonValue.length
 
-    #
-    # Create title for the out put file
-    #
-    $data += "UserPrincipalName,Last sign-in event date in UTC,Cloud Application"
     #
     # Process data of each user's last sign-in activity event
     #
