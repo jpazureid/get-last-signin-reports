@@ -99,15 +99,18 @@ do {
                 $reader.BaseStream.Position = 0
                 $reader.DiscardBufferedData()
                 $errorMessage = $reader.ReadToEnd()
-                try {
-                    $errorObj = ConvertFrom-Json $errorMessage
-                }
-                catch {
-                    Write-Error "Unexpect error: $errorMessage. Continue..."
-                }
-                if ($statusCode -eq 403 -and ($errorObj.error -and $errorObj.error.code -eq "Authentication_RequestFromNonPremiumTenantOrB2CTenant")) {
-                    Write-Error "This tenant doesn't have AAD Premium License or B2C tenant. To show App DisplayName, AAD Premium License is required. isPremiumTenant option is set to false."
-                    $isPremiumTenant = $false
+
+                if ($statusCode -eq 403) {
+                    try {
+                        $errorObj = ConvertFrom-Json $errorMessage
+                        if ($errorObj.error -and $errorObj.error.code -eq "Authentication_RequestFromNonPremiumTenantOrB2CTenant") {
+                            Write-Error "This tenant doesn't have AAD Premium License or B2C tenant. To show App DisplayName, AAD Premium License is required. isPremiumTenant option is set to false."
+                            $isPremiumTenant = $false        
+                        }
+                    }
+                    catch {
+                        Write-Error "Unexpect error: $errorMessage. Continue..."
+                    }
                 } elseif ($statusCode -eq 404) {
                     #Write-Output "This user does not have sign in activity event in last 30 days."
                     $appDisplayName = "This user does not have sign in activity event in last 30 days."
