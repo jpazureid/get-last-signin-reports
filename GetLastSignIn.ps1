@@ -75,6 +75,7 @@ do {
         $allSignInAct = $signInActivityJsonValue[$j].signInActivity
         $lastRequestID = $allSignInAct.lastSignInRequestId
         $lastSignin = $allSignInAct.lastSignInDateTime
+        $appDisplayName = $null
         #Write-Output "User number $j" "We have UPN is $userUPN"
         #Write-Output "We have Last is $lastSignin"
         #Write-Output "We have LastID is $lastRequestID"
@@ -82,7 +83,10 @@ do {
         #
         # Check if event's request id. if id is null then it means the user never had a sctivity event.
         #
-        if ($null -ne $lastRequestID -and $isPremiumTenant) {
+        if ($null -eq $lastRequestID) {
+            $lastSignin = "This user never had sign in activity event."
+        }
+        elseif ($isPremiumTenant) {
             $eventReqUrl = "$resource/v1.0/auditLogs/signIns/$lastRequestID"
             #Write-Output "we have eventReqUrl is $eventReqUrl"
 
@@ -104,31 +108,29 @@ do {
                     try {
                         $errorObj = ConvertFrom-Json $errorMessage
                         if ($errorObj.error -and $errorObj.error.code -eq "Authentication_RequestFromNonPremiumTenantOrB2CTenant") {
-                            Write-Error "This tenant doesn't have AAD Premium License or B2C tenant. To show App DisplayName, AAD Premium License is required. isPremiumTenant option is set to false."
-                            $isPremiumTenant = $false        
+                            Write-Host -BackgroundColor Red "This tenant doesn't have AAD Premium License or B2C tenant. To show App DisplayName, AAD Premium License is required. isPremiumTenant option is set to false."
+                            $isPremiumTenant = $false      
                         }
                     }
                     catch {
                         Write-Error "Unexpect error: $errorMessage. Continue..."
                     }
-                } elseif ($statusCode -eq 404) {
+                }
+                elseif ($statusCode -eq 404) {
                     #Write-Output "This user does not have sign in activity event in last 30 days."
                     $appDisplayName = "This user does not have sign in activity event in last 30 days."
-                } elseif ($statusCode -eq 429) {
+                }
+                elseif ($statusCode -eq 429) {
                     $retryAfter = $_.Exception.Response.Headers["Retry-After"]
                     Write-Host "429 Too Many Requests detected. Retry after $retryAfter seconds."
                     Start-Sleep -s $retryAfter
                     $retryNeeded = $true
-                } else {
+                }
+                else {
                     Write-Error "Unexpected Error: $errorMessage"
                     exit 1
                 }
             }
-        }
-        else {
-            #Write-Output "This user never had sign in activity event."
-            $lastSignin = "This user never had sign in activity event."
-            $appDisplayName = $null
         }
 
         # $retryNeeded will be true when MS Graph API throttling is detected.
