@@ -114,19 +114,31 @@ do {
                 } elseif ($statusCode -eq 404) {
                     #Write-Output "This user does not have sign in activity event in last 30 days."
                     $appDisplayName = "This user does not have sign in activity event in last 30 days."
+                } elseif ($statusCode -eq 429) {
+                    $retryAfter = $_.Exception.Response.Headers["Retry-After"]
+                    Write-Host "429 Too Many Requests detected. Retry after $retryAfter seconds."
+                    Start-Sleep -s $retryAfter
+                    $retryNeeded = $true
                 } else {
-                    Write-Error "UnEpected Error: $errorMessage"
+                    Write-Error "Unexpected Error: $errorMessage"
                     exit 1
                 }
             }
-
         }
         else {
             #Write-Output "This user never had sign in activity event."
             $lastSignin = "This user never had sign in activity event."
             $appDisplayName = $null
         }
-        $data += $userUPN + "," + $lastSignin + "," + $appDisplayName
+
+        # $retryNeeded will be true when MS Graph API throttling is detected.
+        if ($retryNeeded) {
+            $j--;
+            $retryNeeded = $false
+        }
+        else {
+            $data += $userUPN + "," + $lastSignin + "," + $appDisplayName
+        }
     }
     $reqUrl = ($signInActivityJson.'@odata.nextLink') + ''
 
