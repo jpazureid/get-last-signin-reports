@@ -83,10 +83,10 @@ do {
         #
         # Check if event's request id. if id is null then it means the user never had a sctivity event.
         #
-        if ($null -eq $lastRequestID) {
+        if ($null -eq $lastRequestID -or (-not $isPremiumTenant)) {
             $lastSignin = "This user never had sign in activity event."
         }
-        elseif ($isPremiumTenant) {
+        else {
             $eventReqUrl = "$resource/v1.0/auditLogs/signIns/$lastRequestID"
             #Write-Output "we have eventReqUrl is $eventReqUrl"
 
