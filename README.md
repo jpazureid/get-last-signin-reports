@@ -35,9 +35,7 @@ Set-ExecutionPolicy RemoteSigned
 
 CreateAndExportCert.ps1 を実行します。
 
-CreateAndExportCert.ps1 は自己署名証明書を生成し、ユーザーの証明書ストア (個人) に格納します。さらに、公開鍵を含む証明書 (SelfSignedCert.cer ファイル) をカレント  ディレクトリに出力します。キーを利用する場合はこの手順をスキップします。
-
- GetModuleByNuget.ps1 を実行します。
+CreateAndExportCert.ps1 は自己署名証明書を生成し、ユーザーの証明書ストア (個人) に格納します。さらに、公開鍵を含む証明書 (SelfSignedCert.cer ファイル) をカレント  ディレクトリに出力します。
 
 #### Microsoft Graph SDK for PowerShell のインストール
 
