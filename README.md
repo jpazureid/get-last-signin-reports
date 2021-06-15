@@ -19,9 +19,7 @@ PowerShell スクリプトにて、ユーザー毎に最終サインイン日時
 
 ## 最終サインイン日時の取得手順
 
-本スクリプトは、キーまたは証明書を利用して最終サインイン日時を取得します。
-キーは事前準備が容易であるため、一時的な検証に向いています。
-証明書の場合、証明書を作成する事前準備が必要となりますがキーよりも安全であり推奨される方法です。
+本スクリプトは、証明書を利用して最終サインイン日時を取得します。証明書はシークレットよりも安全であり推奨される方法です。
 
 ### 1.事前準備
 
@@ -31,18 +29,25 @@ PowerShell スクリプトにて、ユーザー毎に最終サインイン日時
 Set-ExecutionPolicy RemoteSigned
 ```
 
-[スクリプト一式](https://github.com/jpazureid/get-last-signin-reports/archive/beta.zip) をダウンロードし、任意の場所 (以下では C:\SignInReport) に展開します。
+[スクリプト一式](https://github.com/jpazureid/get-last-signin-reports/archive/use-signin-activity-beta-api.zip) をダウンロードし、任意の場所 (以下では C:\SignInReport) に展開します。
 
-- 認証に使用する証明書の作成
+#### 認証に使用する証明書の作成
 
 CreateAndExportCert.ps1 を実行します。
 
 CreateAndExportCert.ps1 は自己署名証明書を生成し、ユーザーの証明書ストア (個人) に格納します。さらに、公開鍵を含む証明書 (SelfSignedCert.cer ファイル) をカレント  ディレクトリに出力します。キーを利用する場合はこの手順をスキップします。
 
-続けて GetModuleByNuget.ps1 を実行します。
+ GetModuleByNuget.ps1 を実行します。
 
-証明書を用いたトークン取得処理に必要なライブラリを nuget で取得します。
-GetModuleByNuget.ps1 を実行すると、C:\SignInReport 配下に Tools というフォルダーが作成され Microsoft.IdentityModel.Clients.ActiveDirectory.dll などのファイルが保存されます。
+#### Microsoft Graph SDK for PowerShell のインストール
+
+Microsoft Graph SDK for PowerShell をインストールします。
+ローカル管理者権限で PowerShell を起動し、以下のコマンドを実行します。
+すでにインストール済みであれば、手順をスキップします。
+
+```powershell
+Install-Module -Name Microsoft.Graph
+```
 
 ### 2.アプリケーションの登録
 
@@ -96,9 +101,9 @@ Azure AD 上にアプリケーションを準備します。
 
 ![](./img/10_grant_permissions.png)
 
-#### 証明書またはシークレットの登録
+#### 証明書の登録
 
-証明書またはシークレットを登録します。
+証明書を登録します。
 
 - [証明書とシークレット] 画面に移動します。
 
@@ -114,25 +119,9 @@ Azure AD 上にアプリケーションを準備します。
 
 ![](./img/13_upload_certificate.png)
 
-##### クライアント シークレットの登録手順
-
-- [新しいクライアントシークレット] をクリックし、任意の名前を入力し、有効期限を選択後、[追加] をクリックします。
-
-![](./img/14_add_client_secret.png)
-
-- ページを更新すると閲覧できなくなるため、表示されたシークレットの値をメモします。
-
-![](./img/15_add_client_secret.png)
-
 ### 3. スクリプトの実行
 
-最後に、C:\SignInReport 配下に保存した GetLastSignIn.ps1 を、環境に合わせて引数を調整し実行します。
-
-キーの場合：
-
-```powershell
-.\GetLastSignIn.ps1 -authMethod Key -clientSecretOrThumbprint <手順 2 で作成したクライアント シークレットの値> -tenantId 'contoso.onmicrosoft.com' -clientId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -outfile "C:\SignInReport\lastSignIns.csv"
-```
+最後に、C:\SignInReport 配下に保存した Get-LastSignIn.ps1 を、環境に合わせて引数を調整し実行します。
 
 > クライアント ID はアプリの登録手順で取得したアプリケーション ID を指定します。
 > テナント ID は上記のようにドメイン形式で入力いただくか、アプリケーション ID 同様 GUID 形式で入力いただいても結構です。
@@ -140,9 +129,23 @@ Azure AD 上にアプリケーションを準備します。
 証明書の場合：
 
 ```powershell
-.\GetLastSignIn.ps1 -authMethod Cert -clientSecretOrThumbprint <手順 1 でアップロードした証明書の拇印の値> -tenantId 'contoso.onmicrosoft.com' -clientId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -outfile "C:\SignInReport\lastSignIns.csv"
+.\Get-LastSignIn.ps1 -CertigicateThumbprint <手順 1 でアップロードした証明書の拇印の値> -TenantId 'contoso.onmicrosoft.com' -ClientId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -Outfile "C:\SignInReport\lastSignIns.csv"
 ```
 
+アプリや証明書を指定しない場合、デバイス フローでのサインインが求められます。
+グローバル管理者権限※ でサインインすることでもデータの取得が可能です。
+
+コマンドを実行した際に表示されるメッセージに従い <https://microsoft.com/devicelogin> にアクセスし、表示されたコードを入力しサインインを実施します。
+
+```powershell
+.\Get-LastSignIn.ps1
+# Disconnect Graph...
+# Connecting Graph...
+# Client credentail is not provided. Connect-Graph as Administrator account...
+# To sign in, use a web browser to open the page https://microsoft.com/devicelogin and enter the code SSF83XSJM to authenticate.
+```
+
+> ※ Graph SDK への同意のためには、一度グローバル管理者でサインインし、管理者の同意を実行する必要があります。
 ### 実行結果
 
 GetLastLogin.ps1 を実行すると、ユーザー毎に最終サインイン日時が csv ファイルとして取得できます。
