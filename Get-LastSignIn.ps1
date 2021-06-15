@@ -40,10 +40,10 @@ catch {
 Select-MgProfile -Name beta
 
 # Get all users with ID, UPN and SignInActivity
+Write-Host "Reading all users data... This operation might take longer..." -BackgroundColor "Black" -ForegroundColor "Green" 
 $users = Get-MgUser -All -Property id, userPrincipalName, signInActivity
 
 try {
-    Write-Host "Reading all users data... This operation might take longer..." -BackgroundColor "Black" -ForegroundColor "Green" 
     Get-MgAuditLogSignIn -Top 1 -ErrorAction Stop | Out-Null
     $IsPremiumTenant = $true
 }
