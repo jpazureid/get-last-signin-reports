@@ -130,10 +130,11 @@ Azure AD 上にアプリケーションを準備します。
 .\Get-LastSignIn.ps1 -CertigicateThumbprint <手順 1 でアップロードした証明書の拇印の値> -TenantId 'contoso.onmicrosoft.com' -ClientId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -Outfile "C:\SignInReport\lastSignIns.csv"
 ```
 
-アプリや証明書を指定しない場合、デバイス フローでのサインインが求められます。
-グローバル管理者権限※ でサインインすることでもデータの取得が可能です。
+アプリや証明書を指定しない場合、Microsoft Graph SDK [1.6.0](https://github.com/microsoftgraph/msgraph-sdk-powershell/releases/tag/1.6.0) からはブラウザーが起動し認証が開始されます。
+ここでグローバル管理者権限※ でサインインすることでもデータの取得が可能です。
 
-コマンドを実行した際に表示されるメッセージに従い <https://microsoft.com/devicelogin> にアクセスし、表示されたコードを入力しサインインを実施します。
+> 1.6.0 未満の場合はデバイス フローでの認証となります。
+> コマンドを実行した際に表示されるメッセージに従い <https://microsoft.com/devicelogin> にアクセスし、表示されたコードを入力しサインインを実施します。
 
 ```powershell
 .\Get-LastSignIn.ps1
@@ -144,8 +145,9 @@ Azure AD 上にアプリケーションを準備します。
 ```
 
 > ※ Graph SDK への同意のためには、一度グローバル管理者でサインインし、管理者の同意を実行する必要があります。
+
 ### 実行結果
 
-GetLastLogin.ps1 を実行すると、ユーザー毎に最終サインイン日時が csv ファイルとして取得できます。
+Get-LastLogin.ps1 を実行すると、ユーザー毎に最終サインイン日時が csv ファイルとして取得できます。
 
 ![最終サインイン日時の取得結果イメージ](img/lastsigninlog.png)
