@@ -73,7 +73,7 @@ Azure AD 上にアプリケーションを準備します。
 
 ![](./img/05_add_permissions.png)
 
-- "User.Read.All" のチェックを有効にします。
+- "Directory.Read.All" のチェックを有効にします。
 
 ![](./img/06_add_permissions.png)
 
