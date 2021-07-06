@@ -3,7 +3,7 @@ Param(
     [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$TenantId,
     [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$ClientId,
     [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$Outfile = "$env:USERPROFILE\Desktop\lastSignIns.csv",
-    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$IsPremiumTenant = $true
+    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$EnbaleLastSignInActivityDetail = $true
 )
 
 if (-not (Get-Module -ListAvailable -Name Microsoft.Graph)) {
@@ -14,7 +14,8 @@ if (-not (Get-Module -ListAvailable -Name Microsoft.Graph)) {
 try {
     Write-Host "Disconnect Graph..." -BackgroundColor "Black" -ForegroundColor "Green" 
     Disconnect-Graph -ErrorAction SilentlyContinue | Out-Null    
-} catch {}
+}
+catch {}
 
 try {
     Write-Host "Connecting Graph..." -BackgroundColor "Black" -ForegroundColor "Green" 
@@ -24,7 +25,7 @@ try {
             Connect-Graph -Scopes "User.Read.All, AuditLog.Read.All" -TenantId $TenantId
         }
         else {
-            Connect-Graph -Scopes "User.Read.All, AuditLog.Read.All"
+            Connect-Graph -Scopes "Directory.Read.All, AuditLog.Read.All"
         }
     }
     else {
@@ -39,49 +40,48 @@ catch {
 # Use Beta API
 Select-MgProfile -Name beta
 
-# Get all users with ID, UPN and SignInActivity
-Write-Host "Reading all users data... This operation might take longer..." -BackgroundColor "Black" -ForegroundColor "Green" 
-$users = Get-MgUser -All -Property id, userPrincipalName, signInActivity
-
 try {
-    Get-MgAuditLogSignIn -Top 1 -ErrorAction Stop | Out-Null
-    $IsPremiumTenant = $true
+    # Get all users with ID, UPN and SignInActivity
+    # Azure AD Premium lisence is required to complete this action
+    # 
+    Write-Host "Reading all users data... This operation might take longer..." -BackgroundColor "Black" -ForegroundColor "Green" 
+    $users = Get-MgUser -All -Property id, userPrincipalName, signInActivity
+
+    if ($EnbaleLastSignInActivityDetail) {
+        Write-Host "Reading all signIn Activity data... This operation might take longer..." -BackgroundColor "Black" -ForegroundColor "Green" 
+        $users | ForEach-Object {
+            $activity = $_.SignInActivity
+            $lastSignInRequestId = $activity.lastSignInRequestId
+            if ($null -eq $lastSignInRequestId) {
+                return;
+            }
+            try {
+                $lastSignInEvent = Get-MgAuditLogSignIn -SignInId $lastSignInRequestId -ErrorAction Stop
+                $_ | Add-Member -MemberType NoteProperty -Name "LastSignInEvent" -value $lastSignInEvent
+            }
+            catch {
+                # Sign-in activities are stored for 30 days.
+                # You can not check event  older than 30 days.
+                $ex = $_.Exception # Nothing to do...
+            }
+        }    
+    }
 }
 catch {
     if ("Authentication_RequestFromNonPremiumTenantOrB2CTenant" -eq $_.Exception.Code) {
-        Write-Host -ForegroundColor Yellow "This tenant doesn't have Azure AD Premimu License. Skipping load signin activities."            
-        $IsPremiumTenant = $false
+        Write-Host -ForegroundColor Yellow "This tenant doesn't have Azure AD Premimu License. Skipping load signin activities."
+        throw;
     }
     else {
         throw
     }
 }
 
-if ($IsPremiumTenant) {
-    Write-Host "Reading all signIn Activity data... This operation might take longer..." -BackgroundColor "Black" -ForegroundColor "Green" 
-    $users | ForEach-Object {
-        $activity = $_.SignInActivity
-        $lastSignInRequestId = $activity.lastSignInRequestId
-        if ($null -eq $lastSignInRequestId) {
-            return;
-        }
-        try {
-            $lastSignInEvent = Get-MgAuditLogSignIn -SignInId $lastSignInRequestId -ErrorAction Stop
-            $_ | Add-Member -MemberType NoteProperty -Name "LastSignInEvent" -value $lastSignInEvent
-        }
-        catch {
-            # Sign-in activities are stored for 30 days.
-            # You can not check event  older than 30 days.
-            $ex = $_.Exception # Nothing to do...
-        }
-    }
-}
-
 Write-Host "Output data to CSV..."  -BackgroundColor "Black" -ForegroundColor "Green" 
 
 $users | Select-Object Id, UserPrincipalName, @{label = "LastSignInDateUTC"; expression = { $_.SignInActivity.lastSignInDateTime } }, @{label = "AppDisplayName"; expression = { $_.LastSignInEvent.AppDisplayName } }`
-       | ConvertTo-Csv -NoTypeInformation `
-       | Out-File -Encoding utf8 -FilePath $Outfile
+| ConvertTo-Csv -NoTypeInformation `
+| Out-File -Encoding utf8 -FilePath $Outfile
 
 Write-Host "Finish!"  -BackgroundColor "Black" -ForegroundColor "Green" 
 Disconnect-Graph
