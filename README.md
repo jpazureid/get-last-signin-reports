@@ -136,7 +136,7 @@ Azure AD 上にアプリケーションを準備します。
 証明書の場合：
 
 ```powershell
-.\Get-LastSignIn.ps1 -CertigicateThumbprint <手順 1 でアップロードした証明書の拇印の値> -TenantId 'contoso.onmicrosoft.com' -ClientId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -Outfile "C:\SignInReport\lastSignIns.csv"
+.\Get-LastSignIn.ps1 -CertificateThumbprint <手順 1 でアップロードした証明書の拇印の値> -TenantId 'contoso.onmicrosoft.com' -ClientId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -Outfile "C:\SignInReport\lastSignIns.csv"
 ```
 
 アプリや証明書を指定しない場合、Microsoft Graph SDK [1.6.0](https://github.com/microsoftgraph/msgraph-sdk-powershell/releases/tag/1.6.0) からはブラウザーが起動し認証が開始されます。
