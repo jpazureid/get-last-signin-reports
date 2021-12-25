@@ -1,66 +1,94 @@
 Param(
-    [Parameter(ValueFromPipeline = $true, mandatory = $true)][ValidateSet("Cert", "Key")][String]$authMethod,
-    [Parameter(ValueFromPipeline = $true, mandatory = $true)][String]$clientSecretOrThumbprint,
-    [Parameter(ValueFromPipeline = $true, mandatory = $true)][String]$tenantId,
-    [Parameter(ValueFromPipeline = $true, mandatory = $true)][String]$clientId,
-    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$resource = "https://graph.microsoft.com",
-    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$outfile = "$env:USERPROFILE\Desktop\lastSignIns.csv"
+    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$CertificateThumbprint,
+    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$TenantId,
+    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$ClientId,
+    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$Outfile = "$env:USERPROFILE\Desktop\lastSignIns.csv",
+    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$EnbaleLastSignInActivityDetail = $true
 )
 
-# Authorization & resource Url
-$data = @()
+if (-not (Get-Module -ListAvailable -Name Microsoft.Graph)) {
+    Write-Error "Microsoft.Graph module does not exist. Please run `"Install-Module -Name Microsoft.Graph`" command as local administrator"
+    return;
+}
 
-$scope = "$resource/.default"
-$scopes = New-Object System.Collections.ObjectModel.Collection["string"]
-$scopes.Add($scope)
+try {
+    Write-Host "Disconnect Graph..." -BackgroundColor "Black" -ForegroundColor "Green" 
+    Disconnect-Graph -ErrorAction SilentlyContinue | Out-Null    
+}
+catch {}
 
-Function Get-AccessToken() {
-    if ($null -eq $script:confidentialApp) {
-        Add-Type -Path "Tools\Microsoft.Identity.Client\Microsoft.Identity.Client.dll"
-        switch ($authMethod) {
-            "cert" {
-                # Get certificate
-                $cert = Get-ChildItem -path cert:\CurrentUser\My | Where-Object { $_.Thumbprint -eq $clientSecretOrThumbprint }
-            
-                # Create credential Application
-                $script:confidentialApp = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($clientId).WithCertificate($cert).withTenantId($tenantId).Build()
-            }
-            "key" {
-                $script:confidentialApp = [Microsoft.Identity.Client.ConfidentialClientApplicationBuilder]::Create($clientId).WithClientSecret($clientSecretOrThumbprint).withTenantId($tenantId).Build()
-            }
+try {
+    Write-Host "Connecting Graph..." -BackgroundColor "Black" -ForegroundColor "Green" 
+    if ("" -eq $CertificateThumbprint -or "" -eq $ClientId) {
+        Write-Host "Client credentail is not provided. Connect-Graph as Administrator account..." -ForegroundColor Yellow
+        if ($TenantId) {
+            Connect-Graph -Scopes "User.Read.All, AuditLog.Read.All" -TenantId $TenantId
+        }
+        else {
+            Connect-Graph -Scopes "Directory.Read.All, AuditLog.Read.All"
         }
     }
-    # Acquire the authentication result
-    # ConfidentialClientApplication return token from cache if it valid.
-    $authResult = $script:confidentialApp.AcquireTokenForClient($scopes).ExecuteAsync().Result
-    if ($null -eq $authResult) {
-        Write-Host "ERROR: No Access Token"
-        exit
+    else {
+        Connect-Graph -ClientId $ClientId -CertificateThumbprint $CertificateThumbprint -TenantId $TenantId -ErrorAction Stop
     }
-    return $authResult
+}
+catch {
+    Write-Error $_.Exception
+    return;
 }
 
-Function Get-AuthorizationHeader {
-    $authResult = Get-AccessToken
-    $accessToken = $authResult.AccessToken    
-    return @{'Authorization' = "Bearer $($accessToken)" }    
+# Use Beta API
+Select-MgProfile -Name beta
+
+try {
+    # Get all users with ID, UPN and SignInActivity
+    # Azure AD Premium lisence is required to complete this action
+    # 
+    Write-Host "Reading all users data... This operation might take longer..." -BackgroundColor "Black" -ForegroundColor "Green" 
+    $users = Get-MgUser -All -Property id, userPrincipalName, signInActivity
+
+    if ($EnbaleLastSignInActivityDetail) {
+        Write-Host "Reading all signIn Activity data... This operation might take longer..." -BackgroundColor "Black" -ForegroundColor "Green" 
+        $users | ForEach-Object {
+            $activity = $_.SignInActivity
+            $lastSignInRequestId = $activity.lastSignInRequestId
+            $lastNonInteractiveSignInRequestId = $activity.lastNonInteractiveSignInRequestId
+
+            if (($null -eq $lastSignInRequestId) -And ($null -eq $lastNonInteractiveSignInRequestId)) {
+                return;
+            }
+
+            try {
+                $lastSignInEvent = Get-MgAuditLogSignIn -SignInId $lastSignInRequestId -ErrorAction Stop
+                $_ | Add-Member -MemberType NoteProperty -Name "LastSignInEvent" -value $lastSignInEvent
+
+                $filter = "signInEventTypes/any(t: t eq 'nonInteractiveUser') and Id eq '" + $lastNonInteractiveSignInRequestId + "'"
+                $lastNonInteractiveSignInEvent = Get-MgAuditLogSignIn -Filter $filter -ErrorAction Stop
+                $_ | Add-Member -MemberType NoteProperty -Name "LastNonInteractiveSignInEvent" -value $lastNonInteractiveSignInEvent
+            }
+            catch {
+                # Sign-in activities are stored for 30 days.
+                # You can not check event  older than 30 days.
+                $ex = $_.Exception # Nothing to do...
+            }
+        }    
+    }
+}
+catch {
+    if ("Authentication_RequestFromNonPremiumTenantOrB2CTenant" -eq $_.Exception.Code) {
+        Write-Host -ForegroundColor Yellow "This tenant doesn't have Azure AD Premimu License. Skipping load signin activities."
+        throw;
+    }
+    else {
+        throw
+    }
 }
 
+Write-Host "Output data to CSV..."  -BackgroundColor "Black" -ForegroundColor "Green" 
 
-$reqUrl = "$resource/v1.0/users"
-do {
-    $headerParams = Get-AuthorizationHeader
-    $rData = (Invoke-WebRequest -UseBasicParsing -Headers $headerParams -Uri $reqUrl).Content | ConvertFrom-Json
-    $users += $rData.value
-    $reqUrl = ($rData.'@odata.nextLink') + ''
-}while ($reqUrl.IndexOf('https') -ne -1)
+$users | Select-Object Id, UserPrincipalName, @{label = "LastSignInDateUTC"; expression = { $_.SignInActivity.lastSignInDateTime } }, @{label = "AppDisplayName"; expression = { $_.LastSignInEvent.AppDisplayName } },@{label = "LastNonInteractiveSignInDateUTC"; expression = { $_.SignInActivity.lastNonInteractiveSignInDateTime} },@{label = "NonInteractiveAppDisplayName"; expression = { $_.LastNonInteractiveSignInEvent.AppDisplayName } }`
+| ConvertTo-Csv -NoTypeInformation `
+| Out-File -Encoding utf8 -FilePath $Outfile
 
-$data += "UserPrincipalName,Last sign-in date in UTC (Last 30 days)"
-foreach ($user in $users) {
-    $headerParams = Get-AuthorizationHeader
-    $reqUrl = "$resource/v1.0/auditLogs/signIns?&`$filter=userId eq '" + $user.id + "'&`$orderby=createdDateTime desc &`$top=1"
-    $rData = (Invoke-WebRequest -UseBasicParsing -Headers $headerParams -Uri $reqUrl).Content | ConvertFrom-Json
-    $data += $user.UserPrincipalName + "," + $rData.value[0].createdDateTime
-}
-
-$data | Out-File $outfile -encoding "utf8"
+Write-Host "Finish!"  -BackgroundColor "Black" -ForegroundColor "Green" 
+Disconnect-Graph
