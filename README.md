@@ -102,15 +102,13 @@ Azure AD 上にアプリケーションを準備します。
 
 ![](./img/10_grant_permissions.png)
 
-#### 証明書またはシークレットの登録
+#### 証明書の登録
 
-証明書またはシークレットを登録します。
+証明書を登録します。
 
 - [証明書とシークレット] 画面に移動します。
 
 ![](./img/11_upload_certificate.png)
-
-##### 証明書の登録手順
 
 - [証明書のアップロード] をクリックし、表示されるフォルダーボタンをクリックします。ここで、 "1. 認証に使用する証明書の作成" で作成した、 SelfSignedCert.cer を指定します。
 
@@ -120,33 +118,15 @@ Azure AD 上にアプリケーションを準備します。
 
 ![](./img/13_upload_certificate.png)
 
-##### クライアント シークレットの登録手順
-
-- [新しいクライアントシークレット] をクリックし、任意の名前を入力し、有効期限を選択後、[追加] をクリックします。
-
-![](./img/14_add_client_secret.png)
-
-- ページを更新すると閲覧できなくなるため、表示されたシークレットの値をメモします。
-
-![](./img/15_add_client_secret.png)
-
 ### 3. スクリプトの実行
 
 最後に、C:\SignInReport 配下に保存した GetLastSignIn.ps1 を、環境に合わせて引数を調整し実行します。
 
-キーの場合：
-
-```powershell
-.\GetLastSignIn.ps1 -authMethod Key -clientSecretOrThumbprint <手順 2 で作成したクライアント シークレットの値> -tenantId 'contoso.onmicrosoft.com' -clientId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -outfile "C:\SignInReport\lastSignIns.csv"
-```
-
 > クライアント ID はアプリの登録手順で取得したアプリケーション ID を指定します。
-> テナント ID は上記のようにドメイン形式で入力いただくか、アプリケーション ID 同様 GUID 形式で入力いただいても結構です。
-
-証明書の場合：
+> テナント ID はドメイン形式で入力いただくか、アプリケーション ID 同様 GUID 形式で入力いただいても結構です。
 
 ```powershell
-.\GetLastSignIn.ps1 -authMethod Cert -clientSecretOrThumbprint <手順 1 でアップロードした証明書の拇印の値> -tenantId 'contoso.onmicrosoft.com' -clientId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -outfile "C:\SignInReport\lastSignIns.csv"
+.\GetLastSignIn.ps1 -CertificateThumbprint <手順 1 でアップロードした証明書の拇印の値> -tenantId 'contoso.onmicrosoft.com' -clientId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -outfile "C:\SignInReport\lastSignIns.csv"
 ```
 
 ### 実行結果
