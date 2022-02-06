@@ -90,5 +90,10 @@ $users | Select-Object Id, UserPrincipalName, @{label = "LastSignInDateUTC"; exp
 | ConvertTo-Csv -NoTypeInformation `
 | Out-File -Encoding utf8 -FilePath $Outfile
 
+# If JST datetime is preferrable, use this instead
+# $users | Select-Object Id, UserPrincipalName, @{label = "LastSignInDateUTC"; expression = { $_.SignInActivity.lastSignInDateTime.AddHours(9) } }, @{label = "AppDisplayName"; expression = { $_.LastSignInEvent.AppDisplayName } },@{label = "LastNonInteractiveSignInDateUTC"; expression = { $_.SignInActivity.lastNonInteractiveSignInDateTime} },@{label = "NonInteractiveAppDisplayName"; expression = { $_.LastNonInteractiveSignInEvent.AppDisplayName } }`
+# | ConvertTo-Csv -NoTypeInformation `
+# | Out-File -Encoding utf8 -FilePath $Outfile
+
 Write-Host "Finish!"  -BackgroundColor "Black" -ForegroundColor "Green" 
 Disconnect-Graph
