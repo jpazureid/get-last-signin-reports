@@ -160,3 +160,13 @@ Azure AD 上にアプリケーションを準備します。
 Get-LastLogin.ps1 を実行すると、ユーザー毎に最終サインイン日時が csv ファイルとして取得できます。
 
 ![最終サインイン日時の取得結果イメージ](img/lastsigninlog.png)
+
+### <Tips> JST による時刻出力
+上記手順では、ユーザー毎の最終サインイン日時は UTC (協定世界時) によって出力されます。
+JST (日本標準時) による出力をご希望の方は、82 行目 ～ 84 行目の処理を、下記の 3 行に置換ください。
+```powershell
+$users | Select-Object Id, UserPrincipalName, @{label = "LastSignInDateJST"; expression = { $_.SignInActivity.lastSignInDateTime.AddHours(9) } }, @{label = "AppDisplayName"; expression = { $_.LastSignInEvent.AppDisplayName } }`
+| ConvertTo-Csv -NoTypeInformation `
+| Out-File -Encoding utf8 -FilePath $Outfile
+```
+UTC と JST の時差 (9 時間) を考慮し、.AddHours(9) の処理を追加しております。
