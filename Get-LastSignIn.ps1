@@ -43,7 +43,6 @@ Select-MgProfile -Name beta
 try {
     # Get all users with ID, UPN and SignInActivity
     # Azure AD Premium lisence is required to complete this action
-    # 
     Write-Host "Reading all users data... This operation might take longer..." -BackgroundColor "Black" -ForegroundColor "Green" 
     $users = Get-MgUser -All -Property id, userPrincipalName, signInActivity
 
@@ -68,7 +67,7 @@ try {
             }
             catch {
                 # Sign-in activities are stored for 30 days.
-                # You can not check event  older than 30 days.
+                # You can not check events older than 30 days.
                 $ex = $_.Exception # Nothing to do...
             }
         }    
@@ -86,9 +85,15 @@ catch {
 
 Write-Host "Output data to CSV..."  -BackgroundColor "Black" -ForegroundColor "Green" 
 
+# Show DateTime in UTC
 $users | Select-Object Id, UserPrincipalName, @{label = "LastSignInDateUTC"; expression = { $_.SignInActivity.lastSignInDateTime } }, @{label = "AppDisplayName"; expression = { $_.LastSignInEvent.AppDisplayName } },@{label = "LastNonInteractiveSignInDateUTC"; expression = { $_.SignInActivity.lastNonInteractiveSignInDateTime} },@{label = "NonInteractiveAppDisplayName"; expression = { $_.LastNonInteractiveSignInEvent.AppDisplayName } }`
 | ConvertTo-Csv -NoTypeInformation `
 | Out-File -Encoding utf8 -FilePath $Outfile
+
+# Show DateTime in JST
+# $users | Select-Object Id, UserPrincipalName, @{label = "LastSignInDateJST"; expression = { $_.SignInActivity.lastSignInDateTime.AddHours(9) } }, @{label = "AppDisplayName"; expression = { $_.LastSignInEvent.AppDisplayName } },@{label = "LastNonInteractiveSignInDateJST"; expression = { $_.SignInActivity.lastNonInteractiveSignInDateTime.AddHours(9)} },@{label = "NonInteractiveAppDisplayName"; expression = { $_.LastNonInteractiveSignInEvent.AppDisplayName } }`
+# | ConvertTo-Csv -NoTypeInformation `
+# | Out-File -Encoding utf8 -FilePath $Outfile
 
 Write-Host "Finish!"  -BackgroundColor "Black" -ForegroundColor "Green" 
 Disconnect-Graph

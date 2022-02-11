@@ -158,3 +158,9 @@ Azure AD 上にアプリケーションを準備します。
 Get-LastLogin.ps1 を実行すると、ユーザー毎に最終サインイン日時が csv ファイルとして取得できます。
 
 ![最終サインイン日時の取得結果イメージ](img/lastsigninlog.png)
+
+### 補足: JST による時刻出力
+
+Get-LastSignIn.ps1 では、ユーザー毎の最終サインイン日時を UTC (協定世界時) にて出力しています。
+JST (日本標準時) による出力をご希望の方は、スクリプトの後半にある Show DateTime in JST の箇所をコメントから外し、反対に Show DateTime in UTC の部分をコメント化ください。これにより JST の時刻を表示するように処理が切り替わります。
+Show DateTime in JST の箇所では UTC と JST の時差 (9 時間) を考慮し、.AddHours(9) の処理を追加しております。
