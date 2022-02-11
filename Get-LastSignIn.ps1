@@ -52,12 +52,19 @@ try {
         $users | ForEach-Object {
             $activity = $_.SignInActivity
             $lastSignInRequestId = $activity.lastSignInRequestId
-            if ($null -eq $lastSignInRequestId) {
+            $lastNonInteractiveSignInRequestId = $activity.lastNonInteractiveSignInRequestId
+
+            if (($null -eq $lastSignInRequestId) -And ($null -eq $lastNonInteractiveSignInRequestId)) {
                 return;
             }
+
             try {
                 $lastSignInEvent = Get-MgAuditLogSignIn -SignInId $lastSignInRequestId -ErrorAction Stop
                 $_ | Add-Member -MemberType NoteProperty -Name "LastSignInEvent" -value $lastSignInEvent
+
+                $filter = "signInEventTypes/any(t: t eq 'nonInteractiveUser') and Id eq '" + $lastNonInteractiveSignInRequestId + "'"
+                $lastNonInteractiveSignInEvent = Get-MgAuditLogSignIn -Filter $filter -ErrorAction Stop
+                $_ | Add-Member -MemberType NoteProperty -Name "LastNonInteractiveSignInEvent" -value $lastNonInteractiveSignInEvent
             }
             catch {
                 # Sign-in activities are stored for 30 days.
@@ -79,7 +86,7 @@ catch {
 
 Write-Host "Output data to CSV..."  -BackgroundColor "Black" -ForegroundColor "Green" 
 
-$users | Select-Object Id, UserPrincipalName, @{label = "LastSignInDateUTC"; expression = { $_.SignInActivity.lastSignInDateTime } }, @{label = "AppDisplayName"; expression = { $_.LastSignInEvent.AppDisplayName } }`
+$users | Select-Object Id, UserPrincipalName, @{label = "LastSignInDateUTC"; expression = { $_.SignInActivity.lastSignInDateTime } }, @{label = "AppDisplayName"; expression = { $_.LastSignInEvent.AppDisplayName } },@{label = "LastNonInteractiveSignInDateUTC"; expression = { $_.SignInActivity.lastNonInteractiveSignInDateTime} },@{label = "NonInteractiveAppDisplayName"; expression = { $_.LastNonInteractiveSignInEvent.AppDisplayName } }`
 | ConvertTo-Csv -NoTypeInformation `
 | Out-File -Encoding utf8 -FilePath $Outfile
 

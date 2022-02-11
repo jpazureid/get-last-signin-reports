@@ -20,17 +20,15 @@ PowerShell スクリプトにて、ユーザー毎に最終サインイン日時
 
 本スクリプトでは、Beta 版の Microsoft Graph API で取得可能な [SingInActivity](https://docs.microsoft.com/ja-jp/graph/api/resources/signinactivity?view=graph-rest-beta) データをもとに最終サインイン日時を取得します。
 
-## 本スクリプトで取得する最終サインイン日時について
+## 本スクリプトで取得する最終サインイン日時
 
-本スクリプトでは SignInActivity よりユーザーの最終サインインを取得し、サインイン ログから最終サインイン時にアクセスしたアプリケーションを表示しています。そのため、以下の点を予めご留意ください。
-
-- アプリケーション情報については、サインインのログから取得しているため、 30 日以上経過している場合にはアプリケーション情報は取得できません。
+本スクリプトでは SignInActivity よりユーザーの最終サインインを取得し、サインイン ログから最終サインイン時にアクセスしたアプリケーションを表示しています。そのため、アプリケーション情報については、30 日以上経過している場合にはアプリケーション情報は取得できません。
 
 ## 最終サインイン日時の取得手順
 
 本スクリプトは、証明書を利用して最終サインイン日時を取得します。証明書はシークレットよりも安全であり推奨される方法です。
 
-### 1.事前準備
+### 1. 事前準備
 
 ダウンロードした PowerShell スクリプトを実行するため、以下のコマンドで ExecutionPolicy を RemoteSign に設定します。
 
@@ -56,7 +54,7 @@ Microsoft Graph SDK for PowerShell をインストールします。
 Install-Module -Name Microsoft.Graph
 ```
 
-### 2.アプリケーションの登録
+### 2. アプリケーションの登録
 
 Azure AD 上にアプリケーションを準備します。
 
@@ -136,14 +134,16 @@ Azure AD 上にアプリケーションを準備します。
 証明書の場合：
 
 ```powershell
-.\Get-LastSignIn.ps1 -CertificateThumbprint <手順 1 でアップロードした証明書の拇印の値> -TenantId 'contoso.onmicrosoft.com' -ClientId xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -Outfile "C:\SignInReport\lastSignIns.csv"
+.\Get-LastSignIn.ps1 -CertificateThumbprint "<手順 1 でアップロードした証明書の拇印の値>" -TenantId "contoso.onmicrosoft.com" -ClientId "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" -Outfile "C:\SignInReport\lastSignIns.csv"
 ```
 
 アプリや証明書を指定しない場合、Microsoft Graph SDK [1.6.0](https://github.com/microsoftgraph/msgraph-sdk-powershell/releases/tag/1.6.0) からはブラウザーが起動し認証が開始されます。
-ここでグローバル管理者権限※ でサインインすることでもデータの取得が可能です。
+ここでグローバル管理者権限でサインインすることでもデータの取得が可能です。
 
-> 1.6.0 未満の場合はデバイス フローでの認証となります。
-> コマンドを実行した際に表示されるメッセージに従い <https://microsoft.com/devicelogin> にアクセスし、表示されたコードを入力しサインインを実施します。
+> Graph SDK への同意のためには、一度グローバル管理者でサインインし、管理者の同意を実行する必要があります。
+
+なお、1.6.0 未満の場合はデバイス フローでの認証となります。
+コマンドを実行した際に表示されるメッセージに従い <https://microsoft.com/devicelogin> にアクセスし、表示されたコードを入力しサインインを実施します。
 
 ```powershell
 .\Get-LastSignIn.ps1
@@ -152,8 +152,6 @@ Azure AD 上にアプリケーションを準備します。
 # Client credentail is not provided. Connect-Graph as Administrator account...
 # To sign in, use a web browser to open the page https://microsoft.com/devicelogin and enter the code SSF83XSJM to authenticate.
 ```
-
-> ※ Graph SDK への同意のためには、一度グローバル管理者でサインインし、管理者の同意を実行する必要があります。
 
 ### 実行結果
 
