@@ -33,7 +33,7 @@ PowerShell スクリプトにて、ユーザー毎に最終サインイン日時
 ダウンロードした PowerShell スクリプトを実行するため、以下のコマンドで ExecutionPolicy を RemoteSign に設定します。
 
 ```powershell
-Set-ExecutionPolicy RemoteSigned
+Set-ExecutionPolicy Bypass
 ```
 
 [スクリプト一式](https://github.com/jpazureid/get-last-signin-reports/archive/use-signin-activity-beta-api.zip) をダウンロードし、任意の場所 (以下では C:\SignInReport) に展開します。
