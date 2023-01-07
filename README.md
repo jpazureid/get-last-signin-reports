@@ -30,7 +30,7 @@ PowerShell スクリプトにて、ユーザー毎に最終サインイン日時
 
 ### 1. 事前準備
 
-ダウンロードした PowerShell スクリプトを実行するため、以下のコマンドで ExecutionPolicy を RemoteSign に設定します。
+ダウンロードした PowerShell スクリプトを実行するため、以下のコマンドで ExecutionPolicy を変更します。
 
 ```powershell
 Set-ExecutionPolicy Bypass
