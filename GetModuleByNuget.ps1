@@ -12,9 +12,13 @@ Set-Alias nuget $targetNugetExe -Scope Global -Verbose
 ##
 ./nuget install Microsoft.Identity.Client -O .\Tools
 md .\Tools\Microsoft.Identity.Client
+md .\Tools\Microsoft.IdentityModel.Abstractions
 $prtFolder = Get-ChildItem ./Tools | Where-Object {$_.Name -match 'Microsoft.Identity.Client.'}
+$prtFolder2 = Get-ChildItem ./Tools | Where-Object {$_.Name -match 'Microsoft.IdentityModel.Abstractions.'}
 move .\Tools\$prtFolder\lib\net45\*.* .\Tools\Microsoft.Identity.Client
+move .\Tools\$prtFolder2\lib\net45\*.* .\Tools\Microsoft.IdentityModel.Abstractions
 Remove-Item .\Tools\$prtFolder -Force -Recurse
+Remove-Item .\Tools\$prtFolder2 -Force -Recurse
 
 ##
 ## Remove NuGet.exe
