@@ -16,6 +16,7 @@ $scopes.Add($scope)
 
 Function Get-AccessToken() {
     if ($null -eq $script:confidentialApp) {
+        Add-Type -Path "Tools\Microsoft.IdentityModel.Abstractions\Microsoft.IdentityModel.Abstractions.dll"
         Add-Type -Path "Tools\Microsoft.Identity.Client\Microsoft.Identity.Client.dll"
         switch ($authMethod) {
             "cert" {
