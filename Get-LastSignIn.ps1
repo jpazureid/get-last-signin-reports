@@ -1,14 +1,63 @@
+<#
+  .SYNOPSIS
+  Get last sign-in activity of all users in the tenant.
+  
+  .DESCRIPTION
+  This script gets last sign-in activity of all users in the tenant.
+  This script requires Azure AD Premium license and Microsoft.Graph module version 1.27.0 or later.
+
+  .PARAMETER CertificateThumbprint
+  Thumbprint of the certificate used to connect to Graph API.
+
+  .PARAMETER TenantId
+  Tenant ID of the tenant to connect to.
+
+  .Parameter ClientId
+  Client ID of the application to connect to.
+
+  .PARAMETER Outfile
+  Output file path. Default is $env:USERPROFILE\Desktop\lastSignIns.csv
+
+  .PARAMETER EnableLastSignInActivityDetail
+  If this parameter is specified, this script gets last sign-in activity detail of all users in the tenant. This operation might take longer.
+
+  .PARAMETER TimeZone
+  Time zone to convert last sign-in date. example 'Tokyo Standard Time'. All available TimeZones can be found '[System.TimeZoneInfo]::GetSystemTimeZones() | Select-Object -ExpandProperty Id'
+
+  .EXAMPLE
+  .\Get-LastSignIn.ps1 -CertificateThumbprint "1234567890123456789012345678901234567890" -TenantId "12345678-1234-1234-1234-123456789012" -ClientId "12345678-1234-1234-1234-123456789012" -Outfile "C:\temp\lastSignIns.csv" -TimeZone "Tokyo Standard Time"
+#>
+
 Param(
     [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$CertificateThumbprint,
     [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$TenantId,
     [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$ClientId,
     [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$Outfile = "$env:USERPROFILE\Desktop\lastSignIns.csv",
-    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$EnbaleLastSignInActivityDetail = $true
+    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$EnbaleLastSignInActivityDetail = $true,
+    [Parameter(ValueFromPipeline = $true, mandatory = $false)][String]$TimeZone
 )
 
 if (-not (Get-Module -ListAvailable -Name Microsoft.Graph)) {
     Write-Error "Microsoft.Graph module does not exist. Please run `"Install-Module -Name Microsoft.Graph`" command as local administrator"
     return;
+} else {
+    $latestModule = Get-Module -ListAvailable -Name Microsoft.Graph | Sort-Object -Property VErsion -Descending | Select-Object -First 1
+    if ($latestModule.Version -lt [version]"1.27.0")
+    {
+        Write-Error "version 1.27.0 or later is required. Please run `"Update-Module -Name Microsoft.Graph`" command as local administrator"
+        return;
+    }
+}
+
+if ($TimeZone)
+{
+    #check timezone is available
+    try {
+        $timeZoneInfo = [System.TimeZoneInfo]::FindSystemTimeZoneById($TimeZone)        
+    }
+    catch {
+        throw [System.ArgumentException]::new("Invalid TimeZone. example 'Tokyo Standard Time'. All available TimeZones can be found '[System.TimeZoneInfo]::GetSystemTimeZones() | Select-Object -ExpandProperty Id'")
+    }
 }
 
 try {
@@ -37,8 +86,7 @@ catch {
     return;
 }
 
-# Use Beta API
-Select-MgProfile -Name beta
+Select-MgProfile -Name "v1.0"
 
 try {
     # Get all users with ID, UPN and SignInActivity
@@ -85,15 +133,22 @@ catch {
 
 Write-Host "Output data to CSV..."  -BackgroundColor "Black" -ForegroundColor "Green" 
 
-# Show DateTime in UTC
-$users | Select-Object Id, UserPrincipalName, @{label = "LastSignInDateUTC"; expression = { $_.SignInActivity.lastSignInDateTime } }, @{label = "AppDisplayName"; expression = { $_.LastSignInEvent.AppDisplayName } },@{label = "LastNonInteractiveSignInDateUTC"; expression = { $_.SignInActivity.lastNonInteractiveSignInDateTime} },@{label = "NonInteractiveAppDisplayName"; expression = { $_.LastNonInteractiveSignInEvent.AppDisplayName } }`
-| ConvertTo-Csv -NoTypeInformation `
+$props = @(
+    "Id", 
+    "UserPrincipalName", 
+    @{label = "LastSignInDateUTC"; expression = { $_.SignInActivity.lastSignInDateTime } },
+    @{label = "AppDisplayName"; expression = { $_.LastSignInEvent.AppDisplayName } },
+    @{label = "LastNonInteractiveSignInDateUTC"; expression = { $_.SignInActivity.lastNonInteractiveSignInDateTime} },
+    @{label = "NonInteractiveAppDisplayName"; expression = { $_.LastNonInteractiveSignInEvent.AppDisplayName } }
+)
+
+if($TimeZone)
+{
+    $props += @{label = "LastSignInDate($TimeZone)"; expression = { [System.TimeZoneInfo]::ConvertTimeFromUtc($_.SignInActivity.lastSignInDateTime, $timeZoneInfo) } }
+}
+
+$users | Select-Object -Property $props | ConvertTo-Csv -NoTypeInformation `
 | Out-File -Encoding utf8 -FilePath $Outfile
 
-# Show DateTime in JST
-# $users | Select-Object Id, UserPrincipalName, @{label = "LastSignInDateJST"; expression = { $_.SignInActivity.lastSignInDateTime.AddHours(9) } }, @{label = "AppDisplayName"; expression = { $_.LastSignInEvent.AppDisplayName } },@{label = "LastNonInteractiveSignInDateJST"; expression = { $_.SignInActivity.lastNonInteractiveSignInDateTime.AddHours(9)} },@{label = "NonInteractiveAppDisplayName"; expression = { $_.LastNonInteractiveSignInEvent.AppDisplayName } }`
-# | ConvertTo-Csv -NoTypeInformation `
-# | Out-File -Encoding utf8 -FilePath $Outfile
-
-Write-Host "Finish!"  -BackgroundColor "Black" -ForegroundColor "Green" 
+Write-Host "Finish! OutpuFile: $Outfile"  -BackgroundColor "Black" -ForegroundColor "Green" 
 Disconnect-Graph

@@ -16,13 +16,11 @@ PowerShell スクリプトにて、ユーザー毎に最終サインイン日時
 
 ## Azure AD におけるユーザーの最終サインイン日時
 
-2020/10 現在 Beta 版ではございますが、最終サインイン日時が取得可能となりました
-
-本スクリプトでは、Beta 版の Microsoft Graph API で取得可能な [SingInActivity](https://docs.microsoft.com/ja-jp/graph/api/resources/signinactivity?view=graph-rest-beta) データをもとに最終サインイン日時を取得します。
+本スクリプトでは Microsoft Graph API で取得可能な [SingInActivity](https://docs.microsoft.com/ja-jp/graph/api/resources/signinactivity?view=graph-rest-beta) データをもとに最終サインイン日時を取得します。
 
 ## 本スクリプトで取得する最終サインイン日時
 
-本スクリプトでは SignInActivity よりユーザーの最終サインインを取得し、サインイン ログから最終サインイン時にアクセスしたアプリケーションを表示しています。そのため、アプリケーション情報については、30 日以上経過している場合にはアプリケーション情報は取得できません。
+本スクリプトでは SignInActivity よりユーザーの最終サインインを取得し、サインイン ログから最終サインイン時にアクセスしたアプリケーションを表示しています。
 
 ## 最終サインイン日時の取得手順
 
@@ -48,10 +46,25 @@ CreateAndExportCert.ps1 は自己署名証明書を生成し、ユーザーの�
 
 Microsoft Graph SDK for PowerShell をインストールします。
 ローカル管理者権限で PowerShell を起動し、以下のコマンドを実行します。
-すでにインストール済みであれば、手順をスキップします。
 
 ```powershell
 Install-Module -Name Microsoft.Graph
+```
+
+本スクリプトの実行には Microsoft.Graph.User 1.27.0 以降が必要です。
+
+```powershell
+Get-InstalledModule -Name Microsoft.Graph.User | Select-Object Name, Version
+
+# Version    Name                 
+# -------    ----                 
+# 1.27.0     Microsoft.Graph.Users
+```
+
+古いバージョンを利用している場合には、Update-Module コマンドで最新版に更新してください。
+
+```powershell
+Update-Module -Name Microsoft.Graph
 ```
 
 ### 2. アプリケーションの登録
@@ -131,8 +144,6 @@ Azure AD 上にアプリケーションを準備します。
 > クライアント ID はアプリの登録手順で取得したアプリケーション ID を指定します。
 > テナント ID は上記のようにドメイン形式で入力いただくか、アプリケーション ID 同様 GUID 形式で入力いただいても結構です。
 
-証明書の場合：
-
 ```powershell
 .\Get-LastSignIn.ps1 -CertificateThumbprint "<手順 1 でアップロードした証明書の拇印の値>" -TenantId "contoso.onmicrosoft.com" -ClientId "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" -Outfile "C:\SignInReport\lastSignIns.csv"
 ```
@@ -162,5 +173,14 @@ Get-LastLogin.ps1 を実行すると、ユーザー毎に最終サインイン�
 ### 補足: JST による時刻出力
 
 Get-LastSignIn.ps1 では、ユーザー毎の最終サインイン日時を UTC (協定世界時) にて出力しています。
-JST (日本標準時) による出力をご希望の方は、スクリプトの後半にある Show DateTime in JST の箇所をコメントから外し、反対に Show DateTime in UTC の部分をコメント化ください。これにより JST の時刻を表示するように処理が切り替わります。
-Show DateTime in JST の箇所では UTC と JST の時差 (9 時間) を考慮し、.AddHours(9) の処理を追加しております。
+JST (日本標準時) による出力をご希望の場合には、TimeZone パラメーターに "Tokyo Standard Time" を指定してください。
+
+```powershell
+.\Get-LastSignIn.ps1 -CertificateThumbprint "<手順 1 でアップロードした証明書の拇印の値>" -TenantId "contoso.onmicrosoft.com" -ClientId "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" -Outfile "C:\SignInReport\lastSignIns.csv" -TimeZone "Tokyo Standard Time"
+```
+
+TimeZone にて指定できる値は、以下のコマンドで確認頂けます。
+
+```powershell
+[System.TimeZoneInfo]::GetSystemTimeZones()
+```
