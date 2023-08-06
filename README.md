@@ -52,7 +52,7 @@ Install-Module -Name Microsoft.Graph
 本スクリプトの実行には Microsoft.Graph.User 1.27.0 以降が必要です。
 
 ```powershell
-Get-InstalledModule -Name Microsoft.Graph.User | Select-Object Name, Version
+Get-InstalledModule -Name Microsoft.Graph.Users | Select-Object Name, Version
 
 # Version    Name                 
 # -------    ----                 
