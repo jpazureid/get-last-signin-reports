@@ -86,7 +86,7 @@ catch {
     return;
 }
 
-# Select-MgProfile command is no longer supported in Microsoft.Graph PowerShell v2. If you are using the v1 module and usually select the beta profile, please uncomment the line below to explicitly use the v1.0 endpoint.
+# Select-MgProfile command is no longer supported in Microsoft.Graph PowerShell v2. If you are using the v1 module and usually select the beta profile, please uncomment the line below to explicitly use the v1.0 endpoint. for more detail, see https://github.com/microsoftgraph/msgraph-sdk-powershell/blob/dev/docs/upgrade-to-v2.md
 # Select-MgProfile -Name "v1.0"
 
 try {
