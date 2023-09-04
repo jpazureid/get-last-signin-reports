@@ -33,7 +33,7 @@ PowerShell スクリプトにて、ユーザー毎に最終サインイン日時
 Set-ExecutionPolicy Bypass
 ```
 
-[スクリプト一式](https://github.com/jpazureid/get-last-signin-reports/archive/use-signin-activity-beta-api.zip) をダウンロードし、任意の場所 (以下では C:\SignInReport) に展開します。
+[スクリプト一式](https://github.com/jpazureid/get-last-signin-reports/archive/refs/heads/master.zip) をダウンロードし、任意の場所 (以下では C:\SignInReport) に展開します。
 
 #### 認証に使用する証明書の作成
 
